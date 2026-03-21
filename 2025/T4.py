@@ -1,67 +1,48 @@
 """
-给定 n 组测试案例。对于每个案例，包含 k 条关于节点间连通性的描述信息
-描述信息的格式为 x y op:
-op 为 1: 表示x 和 y 是连通的
-op 为 0: 表示x 和 y 是不连通的
-请判断每个案例中的所有信息是否存在逻辑矛盾
-args:
-    n: 测试案例有多少组
-    k: 有多少个点
-    x, y, op
+宇宙中有 num 个星球。实际消耗的 Cost 不仅包含过路费，还受引力差影响
+从星球 i 移动到星球 j 的实际消耗公式为:
+Cost = length+∣g_i−g_j∣
+请计算从起点星球 start 到终点星球 end 的最小总消耗
+Input:
+第一行输入 num
+第二行输入 num 个整数，表示每个星球的引力值
+第三行输入 ways
+接下来 ways 行，每行包含三个整数 start, end, length
+最后一行输入两个整数 Start 和 End
 """
 
-n = int(input("一共有测试组的组数为: "))
-res = []
-for i in range(n):
-    link: list[list[tuple[int, int]]] = [[], []]
-    k = int(input("一共有多少条信息? :"))
-    for j in range(k):
-        x, y, op = map(int, input("输出x, y, op: ").split())
-        # 把op==1和op==0分开放
-        link[op].append((x, y))
-    # 开始找父亲
-    parent = {}
+num = 3
+gravity = [10, 20, 15]
+ways = 3
+length = {(1, 2): 5, (2, 3): 2, (1, 3): 20}
+start = 1
+end = 3
+all_ways = {}
+for key, value in length.items():
+    # 开始星球
+    start_star = key[0]
+    # 终点星球
+    end_star = key[1]
+    # 把长度加上引力差
+    length[key] = value + abs(gravity[start_star - 1] - gravity[end_star - 1])
 
-    def find(x):
-        """
-        x: 找到x的根节点
-        """
-        if x not in parent:
-            # 如果x不在这个并查集中, 那么自己就是自己的父亲, 就是根节点
-            parent[x] = x
-        if parent[x] != x:
-            # 如果自己不是自己的父亲, 说明父亲不是根节点
-            parent[x] = find(parent[x])
-        return parent[x]
+    # 先获每一个点相连的区域，如果字典里没有这个键，就初始化一个空列表
+    if start_star not in all_ways:
+        all_ways[start_star] = []
+    all_ways[start_star].append(end_star)
 
-    # 开始合并
-    def union(x, y):
-        """
-        如果把x和y合并成一个集合, 公用一个父亲
-        """
-        root_x = find(x)
-        root_y = find(y)
-        if root_x != root_y:
-            parent[root_x] = root_y
 
-    # 1. 开始处理连通的部分
-    for way in link[1]:
-        # way: ltuple(int, int)
-        x, y = way
-        union(x, y)
+# 这里的逻辑只针对简单的两段路径
+res = float("inf")
+# 如果有直达的路径，先算进去
+if (start, end) in length:
+    res = min(res, length[(start, end)])
 
-    # 2. 开始处理不连通的部分
-    has_conflict = False
-    for no_way in link[0]:
-        x, y = no_way
-        if find(x) == find(y):
-            has_conflict = True
-            break
+# 如果有通过中转的点
+if start in all_ways:
+    for mid in all_ways[start]:
+        # 需要确保中转点能到终点
+        if (mid, end) in length:
+            res = min(res, length[(start, mid)] + length[(mid, end)])
 
-    if has_conflict:
-        res.append("NO")
-    else:
-        res.append("YES")
-
-for i in range(len(res)):
-    print(res[i])
+print(res)

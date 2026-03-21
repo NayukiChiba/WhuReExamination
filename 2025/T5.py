@@ -1,34 +1,67 @@
 """
-你有 n 项工作可以选择去做。对于每一项工作，给出了开始时间 x、结束时间 y 和报酬 z。
-同一时间只能做一项工作。
-可以在一项工作结束的时刻立即开始另一项工作。
-你需要从这 n 项工作中选择若干项，使得在不时间冲突的前提下，获得的总报酬最大。
+给定 n 组测试案例。对于每个案例，包含 k 条关于节点间连通性的描述信息
+描述信息的格式为 x y op:
+op 为 1: 表示x 和 y 是连通的
+op 为 0: 表示x 和 y 是不连通的
+请判断每个案例中的所有信息是否存在逻辑矛盾
+args:
+    n: 测试案例有多少组
+    k: 有多少个点
+    x, y, op
 """
 
-# dp[i]表示"前i个"工作最大获得的报酬, 1 <= i <= n
-# 当我们碰到第i个工作是否要选择的时候, 有两个选择
-# 1. 不选工作i, 这样的话, dp[i] = dp[i-1], 因为第i个工作没选没报酬
-# 2. 选择工作i, 为了时间不冲突, 所以我们要找到开始时间之前那个结束时间
-# - 比如我们5点开始的任务i, 但是任务(i-1)要6点结束, 那么我们上一个任务就不能是i-1
-# - 我们记上一个任务是p[i], 任务p[i]在4点结束, 是离任务i开始时间最近的结束任务
-# 综上, dp[i] = max(dp[i-1], price[i] + dp[p[i]])
-n = int(input("获取n个任务: "))
-missions: list[list[int]] = [[] for _ in range(n)]
+n = int(input("一共有测试组的组数为: "))
+res = []
 for i in range(n):
-    missions[i] = list(map(int, input("输入三个整数: ").split()))
-# 按照结束时间sort一下mission
-missions.sort(key=lambda x: x[1])
-# 获取mission之后, 规定一下
-dp = [0 for _ in range(n + 1)]
-p = [0 for _ in range(n + 1)]
-for i in range(1, n + 1):
-    start_time = missions[i - 1][0]
-    price = missions[i - 1][2]
-    # 开始获取p[i]
-    for j in range(i - 1, 0, -1):
-        if missions[j - 1][1] <= start_time:
-            p[i] = j
-            break
-    dp[i] = max(dp[i - 1], price + dp[p[i]])
+    link: list[list[tuple[int, int]]] = [[], []]
+    k = int(input("一共有多少条信息? :"))
+    for j in range(k):
+        x, y, op = map(int, input("输出x, y, op: ").split())
+        # 把op==1和op==0分开放
+        link[op].append((x, y))
+    # 开始找父亲
+    parent = {}
 
-print(dp[n])
+    def find(x):
+        """
+        x: 找到x的根节点
+        """
+        if x not in parent:
+            # 如果x不在这个并查集中, 那么自己就是自己的父亲, 就是根节点
+            parent[x] = x
+        if parent[x] != x:
+            # 如果自己不是自己的父亲, 说明父亲不是根节点
+            parent[x] = find(parent[x])
+        return parent[x]
+
+    # 开始合并
+    def union(x, y):
+        """
+        如果把x和y合并成一个集合, 公用一个父亲
+        """
+        root_x = find(x)
+        root_y = find(y)
+        if root_x != root_y:
+            parent[root_x] = root_y
+
+    # 1. 开始处理连通的部分
+    for way in link[1]:
+        # way: ltuple(int, int)
+        x, y = way
+        union(x, y)
+
+    # 2. 开始处理不连通的部分
+    has_conflict = False
+    for no_way in link[0]:
+        x, y = no_way
+        if find(x) == find(y):
+            has_conflict = True
+            break
+
+    if has_conflict:
+        res.append("NO")
+    else:
+        res.append("YES")
+
+for i in range(len(res)):
+    print(res[i])
